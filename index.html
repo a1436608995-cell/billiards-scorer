@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>台球计分器</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- 浮动工具栏 -->
+  <div class="float-toolbar">
+    <button class="ft-btn" id="btn-fullscreen" title="全屏">⛶</button>
+    <button class="ft-btn" id="btn-rotate" title="切换横竖屏">↻</button>
+  </div>
+
+  <!-- ===== 首页 ===== -->
+  <section id="home" class="screen active">
+    <div class="home-bg"></div>
+    <div class="home-content">
+      <div class="logo">🎱</div>
+      <h1 class="title">台球计分器</h1>
+      <p class="subtitle">选择模式开始</p>
+      <div class="cards">
+        <button class="card" data-screen="snooker">
+          <span class="card-icon">🏆</span>
+          <span class="card-title">斯诺克</span>
+          <span class="card-desc">15红球 + 6彩球 · 犯规罚分 · 单杆追踪</span>
+        </button>
+        <button class="card" data-screen="eightball">
+          <span class="card-icon">🎯</span>
+          <span class="card-title">中式八球</span>
+          <span class="card-desc">翻牌计分 · N局N胜 · 红蓝对决</span>
+        </button>
+        <button class="card" data-screen="chase">
+          <span class="card-icon">💰</span>
+          <span class="card-title">追分</span>
+          <span class="card-desc">2-4人 · 4/6/9球 · 得分自定义</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 斯诺克 ===== -->
+  <section id="snooker" class="screen">
+    <header class="topbar">
+      <button class="tb-back" data-screen="home">‹ 返回</button>
+      <span class="tb-title">斯诺克</span>
+      <button class="tb-action" id="snk-new">新局</button>
+    </header>
+
+    <div class="snk-layout">
+      <!-- 选手1 -->
+      <div class="snk-player" id="snk-p1">
+        <div class="snk-name">选手 1</div>
+        <div class="snk-score" id="snk-score1">0</div>
+        <div class="snk-turn">● 击球中</div>
+      </div>
+
+      <!-- 中间球台 -->
+      <div class="snk-table">
+        <div class="snk-break" id="snk-break-area">
+          单杆 <span id="snk-break">0</span>
+        </div>
+        <div class="snk-phase" id="snk-phase">🎯 击打红球</div>
+        <div class="snk-reds">红球剩余 <strong id="snk-reds">15</strong></div>
+        <div class="snk-msg" id="snk-msg">请击打红球</div>
+
+        <!-- 红球 -->
+        <button class="ball red-ball" id="snk-red-btn" data-value="1">
+          <span id="snk-red-count">15</span>
+        </button>
+
+        <!-- 彩球 -->
+        <div class="snk-colors">
+          <button class="ball color-ball yellow" data-value="2">2</button>
+          <button class="ball color-ball green" data-value="3">3</button>
+          <button class="ball color-ball brown" data-value="4">4</button>
+          <button class="ball color-ball blue" data-value="5">5</button>
+          <button class="ball color-ball pink" data-value="6">6</button>
+          <button class="ball color-ball black" data-value="7">7</button>
+        </div>
+      </div>
+
+      <!-- 选手2 -->
+      <div class="snk-player" id="snk-p2">
+        <div class="snk-name">选手 2</div>
+        <div class="snk-score" id="snk-score2">0</div>
+        <div class="snk-turn">● 击球中</div>
+      </div>
+    </div>
+
+    <div class="snk-actions">
+      <button class="btn btn-danger" id="snk-foul">犯规</button>
+      <button class="btn btn-ghost" id="snk-switch">未进/换人</button>
+      <button class="btn btn-ghost" id="snk-undo">撤销</button>
+    </div>
+
+    <!-- 犯规选择弹窗 -->
+    <div class="modal-overlay" id="snk-foul-modal">
+      <div class="modal">
+        <h3>犯规罚分</h3>
+        <div class="foul-options">
+          <button class="foul-opt" data-pts="4">4分</button>
+          <button class="foul-opt" data-pts="5">5分</button>
+          <button class="foul-opt" data-pts="6">6分</button>
+          <button class="foul-opt" data-pts="7">7分</button>
+        </div>
+        <button class="btn btn-ghost modal-cancel">取消</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 中式八球 ===== -->
+  <section id="eightball" class="screen">
+    <header class="topbar">
+      <button class="tb-back" data-screen="home">‹ 返回</button>
+      <span class="tb-title">中式八球</span>
+      <button class="tb-action" id="eb-new">新比赛</button>
+    </header>
+
+    <div class="eb-layout">
+      <!-- 红方 -->
+      <div class="eb-side eb-red" id="eb-p1">
+        <div class="eb-name">选手 1</div>
+        <div class="flip-card" id="flip1">
+          <div class="flip-inner">
+            <div class="flip-front">0</div>
+            <div class="flip-back">1</div>
+          </div>
+        </div>
+        <button class="eb-plus" data-player="1">+1</button>
+      </div>
+
+      <!-- 中间 -->
+      <div class="eb-center">
+        <div class="eb-games">
+          <span class="eb-games-label">局分</span>
+          <span class="eb-games-score" id="eb-games">0 : 0</span>
+        </div>
+        <div class="eb-format" id="eb-format">7局4胜</div>
+        <div class="eb-msg" id="eb-msg"></div>
+        <button class="btn btn-ghost btn-sm" id="eb-format-btn">修改局数</button>
+      </div>
+
+      <!-- 蓝方 -->
+      <div class="eb-side eb-blue" id="eb-p2">
+        <div class="eb-name">选手 2</div>
+        <div class="flip-card" id="flip2">
+          <div class="flip-inner">
+            <div class="flip-front">0</div>
+            <div class="flip-back">1</div>
+          </div>
+        </div>
+        <button class="eb-plus" data-player="2">+1</button>
+      </div>
+    </div>
+
+    <div class="eb-actions">
+      <button class="btn btn-ghost" id="eb-undo">撤销</button>
+      <button class="btn btn-ghost" id="eb-reset-game">重置本局</button>
+      <button class="btn btn-primary" id="eb-scoreboard">计分牌模式</button>
+    </div>
+
+    <!-- 局数弹窗 -->
+    <div class="modal-overlay" id="eb-format-modal">
+      <div class="modal">
+        <h3>选择局数</h3>
+        <div class="foul-options">
+          <button class="foul-opt" data-total="3">3局</button>
+          <button class="foul-opt" data-total="5">5局</button>
+          <button class="foul-opt" data-total="7">7局</button>
+          <button class="foul-opt" data-total="9">9局</button>
+        </div>
+        <button class="btn btn-ghost modal-cancel">取消</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 追分 ===== -->
+  <section id="chase" class="screen">
+    <header class="topbar">
+      <button class="tb-back" data-screen="home">‹ 返回</button>
+      <span class="tb-title">追分</span>
+      <button class="tb-action" id="ch-new">新局</button>
+    </header>
+
+    <!-- 设置面板 -->
+    <div class="ch-setup" id="ch-setup">
+      <h3>游戏设置</h3>
+      <div class="setup-row">
+        <label>人数</label>
+        <div class="segmented" id="ch-player-count">
+          <button data-n="2">2人</button>
+          <button data-n="3" class="active">3人</button>
+          <button data-n="4">4人</button>
+        </div>
+      </div>
+      <div class="setup-row">
+        <label>球数</label>
+        <div class="segmented" id="ch-ball-count">
+          <button data-n="4">4球</button>
+          <button data-n="6">6球</button>
+          <button data-n="9" class="active">9球</button>
+        </div>
+      </div>
+      <div class="setup-row">
+        <label>得分规则</label>
+      </div>
+      <div class="setup-scores" id="ch-score-rules">
+        <div class="score-rule">
+          <span>大金</span><input type="number" id="ch-rule-big" value="10" min="1" max="99">
+        </div>
+        <div class="score-rule">
+          <span>小金</span><input type="number" id="ch-rule-small" value="5" min="1" max="99">
+        </div>
+        <div class="score-rule">
+          <span>普胜</span><input type="number" id="ch-rule-normal" value="3" min="1" max="99">
+        </div>
+        <div class="score-rule">
+          <span>犯规</span><input type="number" id="ch-rule-foul" value="-1" max="0" min="-99">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="ch-start">开始游戏</button>
+    </div>
+
+    <!-- 游戏面板 -->
+    <div class="ch-game" id="ch-game">
+      <div class="ch-players" id="ch-players"></div>
+      <div class="ch-balls" id="ch-balls"></div>
+      <div class="ch-msg" id="ch-msg"></div>
+
+      <div class="ch-score-btns">
+        <button class="btn btn-score" data-type="big">🌟 大金</button>
+        <button class="btn btn-score" data-type="small">⭐ 小金</button>
+        <button class="btn btn-score" data-type="normal">普胜</button>
+      </div>
+
+      <div class="ch-actions">
+        <button class="btn btn-danger" id="ch-foul-btn">犯规</button>
+        <button class="btn btn-ghost" id="ch-switch-btn">换人</button>
+        <button class="btn btn-ghost" id="ch-undo">撤销</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 历史弹窗 ===== -->
+  <div class="modal-overlay" id="history-modal">
+    <div class="modal modal-wide">
+      <h3>对局记录</h3>
+      <div class="history-list" id="history-list"></div>
+      <button class="btn btn-ghost modal-cancel">关闭</button>
+    </div>
+  </div>
+
+</div>
+
+<canvas id="share-canvas" width="750" height="1000" style="display:none"></canvas>
+
+<script src="app.js"></script>
+</body>
+</html>
