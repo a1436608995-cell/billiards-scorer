@@ -368,6 +368,19 @@ document.getElementById('eb-reset-game').addEventListener('click', () => {
 })
 document.getElementById('eb-new').addEventListener('click', () => EB.init())
 document.getElementById('eb-format-btn').addEventListener('click', () => openModal('eb-format-modal'))
+
+// Scoreboard mode toggle
+let scoreboardMode = false
+document.getElementById('eb-scoreboard').addEventListener('click', () => {
+  scoreboardMode = !scoreboardMode
+  document.body.classList.toggle('scoreboard-mode', scoreboardMode)
+  document.getElementById('eb-scoreboard').textContent = scoreboardMode ? '退出计分牌' : '计分牌模式'
+  // Hide other screens from nav
+  document.querySelectorAll('.tb-back').forEach(b => b.style.display = scoreboardMode ? 'none' : '')
+  if (!scoreboardMode) {
+    document.querySelectorAll('.tb-back').forEach(b => b.style.display = '')
+  }
+})
 document.querySelectorAll('#eb-format-modal .foul-opt').forEach(btn => {
   btn.addEventListener('click', () => EB.setTotal(parseInt(btn.dataset.total)))
 })
@@ -671,6 +684,136 @@ document.getElementById('btn-rotate').addEventListener('click', () => {
     try { screen.orientation.unlock() } catch(e) {}
   }
 })
+
+/* ===== Match Result Image Generator ===== */
+function generateShareImage(mode, data) {
+  const canvas = document.getElementById('share-canvas')
+  const ctx = canvas.getContext('2d')
+  const w = canvas.width, h = canvas.height
+
+  // Background - pool table green felt
+  const bgGrad = ctx.createRadialGradient(w/2, h*0.3, 100, w/2, h, 800)
+  bgGrad.addColorStop(0, '#1a4a2a')
+  bgGrad.addColorStop(0.5, '#0d2b15')
+  bgGrad.addColorStop(1, '#050f08')
+  ctx.fillStyle = bgGrad
+  ctx.fillRect(0, 0, w, h)
+
+  // Corner decorations (like pool table pockets)
+  const corners = [[40,40],[w-40,40],[40,h-40],[w-40,h-40]]
+  corners.forEach(([x,y]) => {
+    ctx.fillStyle = '#000'
+    ctx.beginPath(); ctx.arc(x, y, 30, 0, Math.PI*2); ctx.fill()
+  })
+
+  // Title
+  ctx.fillStyle = '#ffd60a'
+  ctx.font = 'bold 42px "Arial Black", "PingFang SC", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('台球计分器', w/2, 120)
+
+  // Mode
+  ctx.fillStyle = '#98989d'
+  ctx.font = '24px "PingFang SC", sans-serif'
+  ctx.fillText(mode, w/2, 165)
+
+  // Divider
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)'
+  ctx.lineWidth = 1
+  ctx.beginPath(); ctx.moveTo(80, 200); ctx.lineTo(w-80, 200); ctx.stroke()
+
+  // Score/Result
+  ctx.fillStyle = '#fff'
+  ctx.font = 'bold 64px "Arial Black", "PingFang SC", sans-serif'
+  ctx.fillText(data.result, w/2, 290)
+
+  // Players & Scores
+  if (data.players) {
+    data.players.forEach((p, i) => {
+      const y = 400 + i * 160
+      // Player card
+      ctx.fillStyle = i === 0 ? 'rgba(255,59,48,0.15)' : i === 1 ? 'rgba(0,122,255,0.15)' : 'rgba(255,255,255,0.05)'
+      ctx.fillRect(100, y - 40, w - 200, 120)
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)'
+      ctx.strokeRect(100, y - 40, w - 200, 120)
+
+      ctx.fillStyle = '#fff'
+      ctx.font = 'bold 36px "Arial Black", "PingFang SC", sans-serif'
+      ctx.textAlign = 'left'
+      ctx.fillText(`${i+1}. ${p.name}`, 140, y + 10)
+
+      ctx.fillStyle = '#ffd60a'
+      ctx.font = 'bold 56px "Arial Black", sans-serif'
+      ctx.textAlign = 'right'
+      ctx.fillText(`${p.score}分`, w - 140, y + 15)
+    })
+  }
+
+  // Date
+  ctx.fillStyle = 'rgba(255,255,255,0.3)'
+  ctx.font = '20px "PingFang SC", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText(new Date().toLocaleString(), w/2, h - 100)
+
+  // Bottom branding
+  ctx.fillStyle = 'rgba(255,255,255,0.15)'
+  ctx.font = '18px "PingFang SC", sans-serif'
+  ctx.fillText('台球计分器 · billiards-scorer', w/2, h - 50)
+
+  return canvas.toDataURL('image/png')
+}
+
+// Share button on snooker
+function addShareToTopbar(screenId, mode, getData) {
+  const topbar = document.querySelector(`#${screenId} .topbar`)
+  if (!topbar || topbar.querySelector('.tb-share')) return
+  const btn = document.createElement('button')
+  btn.className = 'tb-action tb-share'
+  btn.textContent = '分享'
+  btn.addEventListener('click', () => {
+    const data = getData()
+    const imgUrl = generateShareImage(mode, data)
+    // Try Web Share API first, fallback to download
+    if (navigator.share && navigator.canShare) {
+      fetch(imgUrl).then(r => r.blob()).then(blob => {
+        const file = new File([blob], 'billiards-result.png', {type:'image/png'})
+        navigator.share({ files: [file], title: '台球计分器战绩', text: data.result })
+          .catch(() => downloadImage(imgUrl))
+      }).catch(() => downloadImage(imgUrl))
+    } else {
+      downloadImage(imgUrl)
+    }
+  })
+  topbar.appendChild(btn)
+}
+
+function downloadImage(url) {
+  const a = document.createElement('a')
+  a.href = url; a.download = 'billiards-result.png'
+  document.body.appendChild(a); a.click(); document.body.removeChild(a)
+}
+
+// Add share buttons when screens are shown
+new MutationObserver(() => {
+  if (document.getElementById('snooker').classList.contains('active')) {
+    addShareToTopbar('snooker', '斯诺克', () => ({
+      result: Snk.p1 > Snk.p2 ? '选手1 获胜' : Snk.p2 > Snk.p1 ? '选手2 获胜' : '平局',
+      players: [{name:'选手1',score:Snk.p1}, {name:'选手2',score:Snk.p2}]
+    }))
+  }
+  if (document.getElementById('eightball').classList.contains('active')) {
+    addShareToTopbar('eightball', '中式八球', () => ({
+      result: `${EB.games1}:${EB.games2} (${EB.totalGames}局${Math.ceil(EB.totalGames/2)}胜)`,
+      players: [{name:'选手1',score:EB.games1}, {name:'选手2',score:EB.games2}]
+    }))
+  }
+  if (document.getElementById('chase').classList.contains('active')) {
+    addShareToTopbar('chase', '追分', () => ({
+      result: Chase.players.length ? Chase.players.map(p => `${p.name}:${p.score}`).join(' | ') : '新游戏',
+      players: Chase.players.map(p => ({name:p.name, score:p.score}))
+    }))
+  }
+}).observe(document.getElementById('app'), { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
 
 /* ===== Initialize ===== */
 Snk.init()
