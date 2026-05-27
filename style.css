@@ -71,10 +71,12 @@ html, body {
   color: var(--text); cursor: pointer;
   transition: var(--transition);
   text-align: left; font-family: var(--font);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
 .card:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
 .card:active { transform: scale(0.98); }
+.card:nth-child(1) { border-left: 4px solid #e74c3c; }
+.card:nth-child(2) { border-left: 4px solid #007aff; }
+.card:nth-child(3) { border-left: 4px solid #f39c12; }
 .card-icon { font-size: 36px; flex-shrink: 0; }
 .card-title { font-size: 20px; font-weight: 600; }
 .card-desc { font-size: 13px; color: var(--text2); display: block; margin-top: 2px; }
@@ -137,9 +139,11 @@ html, body {
 
 /* ===== Balls ===== */
 .ball {
-  width: 64px; height: 64px; border-radius: 50%;
+  width: 64px; height: 64px; min-width: 64px; min-height: 64px;
+  border-radius: 50%;
   border: none; cursor: pointer; font-weight: 700; font-size: 20px;
   display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden;
   transition: var(--transition); font-family: var(--font);
   box-shadow: inset -4px -4px 8px rgba(0,0,0,0.5), inset 2px 2px 6px rgba(255,255,255,0.15);
 }
@@ -153,7 +157,8 @@ html, body {
 }
 
 .red-ball {
-  width: 72px; height: 72px;
+  width: 72px; height: 72px; min-width: 72px; min-height: 72px;
+  border-radius: 50%; flex-shrink: 0; overflow: hidden;
   background: radial-gradient(circle at 35% 35%, #e74c3c, #7b0000);
   color: #fff;
 }
@@ -365,6 +370,31 @@ html, body {
 .history-item .hi-detail { color: var(--text2); margin-top: 2px; }
 .history-item .hi-time { font-size: 12px; color: var(--text2); opacity: 0.6; margin-top: 2px; }
 
+/* ===== Floating Toolbar ===== */
+.float-toolbar {
+  position: fixed; top: 12px; right: 12px; z-index: 200;
+  display: flex; gap: 8px;
+}
+.ft-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text2); font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: var(--transition);
+}
+.ft-btn:active { background: rgba(255,255,255,0.18); }
+
+/* ===== Landscape rotate mode ===== */
+.rotated {
+  transform: rotate(90deg);
+  transform-origin: center center;
+  width: 100vh !important;
+  height: 100vw !important;
+  position: fixed !important;
+  top: 0; left: 0;
+}
+
 /* ===== Keyboard hint ===== */
 .kb-hint {
   position: fixed; bottom: 8px; right: 12px;
@@ -407,12 +437,12 @@ html, body {
   .snk-player { padding: 8px; }
   .snk-score { font-size: 36px !important; }
   .snk-table { padding: 8px; gap: 4px; }
-  .ball { width: 44px !important; height: 44px !important; font-size: 14px !important; }
-  .red-ball { width: 52px !important; height: 52px !important; }
-  .snk-colors .ball { width: 40px !important; height: 40px !important; font-size: 12px !important; }
+  .ball { width: 44px !important; height: 44px !important; min-width: 44px !important; min-height: 44px !important; font-size: 14px !important; }
+  .red-ball { width: 52px !important; height: 52px !important; min-width: 52px !important; min-height: 52px !important; }
+  .snk-colors .ball { width: 40px !important; height: 40px !important; min-width: 40px !important; min-height: 40px !important; font-size: 12px !important; }
   .snk-actions { padding: 6px 12px; }
   .snk-actions .btn { padding: 8px; font-size: 13px; }
   .flip-inner { width: 80px !important; height: 100px !important; }
   .flip-front, .flip-back { font-size: 50px !important; }
-  .eb-plus { width: 40px !important; height: 40px !important; font-size: 18px !important; }
+  .eb-plus { width: 40px !important; height: 40px !important; min-width: 40px !important; min-height: 40px !important; font-size: 18px !important; }
 }

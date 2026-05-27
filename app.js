@@ -647,6 +647,31 @@ document.addEventListener('keydown', (e) => {
   }
 })
 
+/* ===== Fullscreen ===== */
+document.getElementById('btn-fullscreen').addEventListener('click', () => {
+  const el = document.documentElement
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document)
+  } else {
+    (el.requestFullscreen || el.webkitRequestFullscreen).call(el)
+  }
+})
+
+/* ===== Rotate / Landscape Toggle ===== */
+let isRotated = false
+document.getElementById('btn-rotate').addEventListener('click', () => {
+  isRotated = !isRotated
+  const app = document.getElementById('app')
+  if (isRotated) {
+    app.classList.add('rotated')
+    // Try native orientation lock too
+    try { screen.orientation.lock('landscape').catch(() => {}) } catch(e) {}
+  } else {
+    app.classList.remove('rotated')
+    try { screen.orientation.unlock() } catch(e) {}
+  }
+})
+
 /* ===== Initialize ===== */
 Snk.init()
 EB.init()
