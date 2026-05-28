@@ -22,9 +22,12 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
   document.getElementById(id).classList.add('active')
   if (id === 'home') document.querySelector('.kb-hint')?.remove()
+  // float toolbar: sit below topbar on sub-screens
+  const tb = document.querySelector('.float-toolbar')
+  tb.style.top = id === 'home' ? '12px' : '56px'
 }
 
-document.querySelectorAll('.tb-back, .card').forEach(el => {
+document.querySelectorAll('.tb-back').forEach(el => {
   el.addEventListener('click', () => {
     const screen = el.dataset.screen
     if (screen) showScreen(screen)
@@ -75,16 +78,250 @@ function showHistory() {
   openModal('history-modal')
 }
 
-// 首页增加历史入口
-document.addEventListener('DOMContentLoaded', () => {
-  const home = document.getElementById('home')
-  const histBtn = document.createElement('button')
-  histBtn.className = 'card'
-  histBtn.style.cssText = 'margin-top:16px;opacity:0.6'
-  histBtn.innerHTML = '<span class="card-icon">📋</span><span class="card-title">对局记录</span><span class="card-desc">查看历史战绩</span>'
-  histBtn.addEventListener('click', showHistory)
-  home.querySelector('.cards').appendChild(histBtn)
-})
+/* ===== Home Page Card Carousel ===== */
+const Carousel = {
+  cards: [
+    { icon: '🏆', title: '斯诺克', desc: '15红球 + 6彩球 · 犯规罚分 · 单杆追踪', screen: 'snooker' },
+    { icon: '🎯', title: '中式八球', desc: '翻牌计分 · N局N胜 · 红蓝对决', screen: 'eightball' },
+    { icon: '💰', title: '追分', desc: '2-4人 · 4/6/9球 · 得分自定义', screen: 'chase' },
+    { icon: '📋', title: '对局记录', desc: '查看历史战绩', action: 'history' }
+  ],
+  currentIndex: 0,
+  targetIndex: 0,
+  dragOffset: 0,
+  gap: 120,         // vertical gap between cards
+  containerH: 310,   // matches CSS .card-carousel height
+  cardH: 95,         // approximate card height
+  animId: null,
+  isDragging: false,
+  dragStartY: 0,
+  dragStartOffset: 0,
+  _wheelTimer: null,
+  _snapping: false,
+
+  init() {
+    this.currentIndex = 0
+    this.targetIndex = 0
+    this.dragOffset = 0
+    this.buildDOM()
+    this.positionCards()
+    this.bindEvents()
+  },
+
+  buildDOM() {
+    const track = document.getElementById('carousel-track')
+    track.innerHTML = this.cards.map((c, i) => `
+      <div class="carousel-card" data-index="${i}">
+        <span class="card-icon">${c.icon}</span>
+        <div>
+          <span class="card-title">${c.title}</span>
+          <span class="card-desc">${c.desc}</span>
+        </div>
+      </div>
+    `).join('')
+
+    const indicator = document.getElementById('carousel-indicator')
+    indicator.innerHTML = this.cards.map((_, i) =>
+      `<div class="carousel-dot" data-dot="${i}"></div>`
+    ).join('')
+  },
+
+  cardStyle(index) {
+    const dist = index - this.currentIndex
+    const centerY = (this.containerH - this.cardH) / 2
+    const y = centerY + dist * this.gap + this.dragOffset
+    const absDist = Math.abs(dist)
+
+    // scale and opacity based on distance from active
+    let scale, opacity, rotX
+    if (absDist < 0.5) {
+      // Active card (interpolating toward center)
+      const t = absDist * 2 // 0 to 1 within half-step
+      scale = 1 - t * 0.12
+      opacity = 1 - t * 0.3
+      rotX = dist * 8
+    } else if (absDist < 1.5) {
+      scale = 0.85
+      opacity = 0.55
+      rotX = dist > 0 ? -25 : 25
+    } else {
+      scale = 0.7
+      opacity = 0.25
+      rotX = dist > 0 ? -40 : 40
+    }
+
+    return {
+      transform: `translateY(${y}px) scale(${scale}) rotateX(${rotX}deg)`,
+      opacity: opacity,
+      zIndex: 10 - absDist * 5
+    }
+  },
+
+  positionCards() {
+    const cards = document.querySelectorAll('.carousel-card')
+    cards.forEach((card, i) => {
+      const s = this.cardStyle(i)
+      card.style.transform = s.transform
+      card.style.opacity = s.opacity
+      card.style.zIndex = s.zIndex
+      card.classList.toggle('active', i === this.currentIndex)
+    })
+
+    document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+      dot.classList.toggle('active', i === this.currentIndex)
+    })
+  },
+
+  snapTo(index) {
+    this.targetIndex = ((index % this.cards.length) + this.cards.length) % this.cards.length
+    this._snapping = true
+    const startOffset = this.dragOffset
+    const startIndex = this.currentIndex
+    const targetOffset = (startIndex - this.targetIndex) * this.gap
+    const startTime = performance.now()
+    const duration = 350
+
+    const animate = (now) => {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3)
+      this.dragOffset = startOffset + (targetOffset - startOffset) * eased
+
+      // When offset passes threshold, switch currentIndex
+      const netOffset = this.dragOffset
+      const shiftedBy = Math.round(netOffset / this.gap)
+      const newIndex = ((startIndex - shiftedBy) % this.cards.length + this.cards.length) % this.cards.length
+      if (newIndex !== this.currentIndex) {
+        this.currentIndex = newIndex
+        this.dragOffset = netOffset - shiftedBy * this.gap
+      }
+
+      this.positionCards()
+
+      if (progress < 1) {
+        this.animId = requestAnimationFrame(animate)
+      } else {
+        // Final snap
+        this.currentIndex = this.targetIndex
+        this.dragOffset = 0
+        this.positionCards()
+        this.animId = null
+        this._snapping = false
+      }
+    }
+    if (this.animId) cancelAnimationFrame(this.animId)
+    this.animId = requestAnimationFrame(animate)
+  },
+
+  selectActive() {
+    const card = this.cards[this.currentIndex]
+    if (card.screen) {
+      showScreen(card.screen)
+    } else if (card.action === 'history') {
+      showHistory()
+    }
+  },
+
+  bindEvents() {
+    const el = document.getElementById('card-carousel')
+
+    el.addEventListener('click', (e) => {
+      if (this.isDragging || this._snapping) return
+      const card = e.target.closest('.carousel-card')
+      if (card) {
+        const idx = parseInt(card.dataset.index)
+        if (idx === this.currentIndex) {
+          this.selectActive()
+        } else {
+          this.snapTo(idx)
+        }
+      }
+    })
+
+    el.addEventListener('pointerdown', (e) => {
+      if (this._snapping) return
+      this.isDragging = true
+      this.dragStartY = e.clientY
+      this.dragStartOffset = this.dragOffset
+      el.classList.add('dragging')
+      el.setPointerCapture(e.pointerId)
+    })
+
+    el.addEventListener('pointermove', (e) => {
+      if (!this.isDragging) return
+      const deltaY = e.clientY - this.dragStartY
+      if (Math.abs(deltaY) < 3) return
+      this.dragOffset = this.dragStartOffset + deltaY
+
+      // Switch currentIndex when offset crosses gap/2
+      const totalOffset = this.dragStartOffset + deltaY
+      const crossed = Math.round(totalOffset / this.gap)
+      const startShifted = Math.round(this.dragStartOffset / this.gap)
+      const indexDelta = crossed - startShifted
+      if (indexDelta !== 0) {
+        let newIdx = this.currentIndex - indexDelta
+        newIdx = ((newIdx % this.cards.length) + this.cards.length) % this.cards.length
+        if (newIdx !== this.currentIndex) {
+          this.currentIndex = newIdx
+          this.dragOffset = totalOffset - crossed * this.gap
+          this.dragStartOffset = this.dragOffset
+          this.dragStartY = e.clientY
+        }
+      }
+      this.positionCards()
+    })
+
+    el.addEventListener('pointerup', () => {
+      if (!this.isDragging) return
+      this.isDragging = false
+      el.classList.remove('dragging')
+      this.snapTo(this.currentIndex)
+    })
+
+    el.addEventListener('pointerleave', () => {
+      if (this.isDragging) {
+        this.isDragging = false
+        el.classList.remove('dragging')
+        this.snapTo(this.currentIndex)
+      }
+    })
+
+    el.addEventListener('wheel', (e) => {
+      e.preventDefault()
+      if (this._snapping) return
+      this.dragOffset -= e.deltaY * 0.4
+      const crossed = Math.round(this.dragOffset / this.gap)
+      if (crossed !== 0) {
+        let newIdx = this.currentIndex - crossed
+        newIdx = ((newIdx % this.cards.length) + this.cards.length) % this.cards.length
+        this.currentIndex = newIdx
+        this.dragOffset -= crossed * this.gap
+      }
+      this.positionCards()
+      clearTimeout(this._wheelTimer)
+      this._wheelTimer = setTimeout(() => this.snapTo(this.currentIndex), 250)
+    }, { passive: false })
+
+    document.getElementById('carousel-indicator').addEventListener('click', (e) => {
+      const dot = e.target.closest('.carousel-dot')
+      if (dot) this.snapTo(parseInt(dot.dataset.dot))
+    })
+
+    document.addEventListener('keydown', (e) => {
+      if (!document.getElementById('home').classList.contains('active')) return
+      if (this._snapping) return
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        const dir = e.key === 'ArrowUp' ? -1 : 1
+        this.snapTo(this.currentIndex + dir)
+      }
+      if (e.key === 'Enter') this.selectActive()
+    })
+  }
+}
+
+Carousel.init()
 
 /* ================================================================
    SNOOKER
@@ -103,6 +340,13 @@ const Snk = {
     this.render()
     document.getElementById('snk-foul-modal').classList.remove('active')
     showKbHint('键盘: R/1=红球  2-7=彩球(按分值)  F=犯规  Space=换人  Z=撤销')
+  },
+
+  remainingPoints() {
+    if (this.phase === 'gameover') return 0
+    const colorSum = this.colorsOn.reduce((a, b) => a + b, 0)
+    if (this.phase === 'colors') return colorSum
+    return this.reds * 8 + colorSum
   },
 
   save() {
@@ -214,6 +458,8 @@ const Snk = {
     document.getElementById('snk-break-area').style.display = this.break > 0 ? '' : 'none'
     document.getElementById('snk-reds').textContent = this.reds
     document.getElementById('snk-red-count').textContent = this.reds
+    document.getElementById('snk-remaining').textContent = this.remainingPoints()
+    document.getElementById('snk-remaining-area').style.display = this.phase === 'gameover' ? 'none' : ''
 
     const p1El = document.getElementById('snk-p1')
     const p2El = document.getElementById('snk-p2')
@@ -660,28 +906,30 @@ document.addEventListener('keydown', (e) => {
   }
 })
 
-/* ===== Fullscreen ===== */
-document.getElementById('btn-fullscreen').addEventListener('click', () => {
-  const el = document.documentElement
-  if (document.fullscreenElement || document.webkitFullscreenElement) {
-    (document.exitFullscreen || document.webkitExitFullscreen).call(document)
-  } else {
-    (el.requestFullscreen || el.webkitRequestFullscreen).call(el)
-  }
-})
-
-/* ===== Rotate / Landscape Toggle ===== */
+/* ===== Fullscreen + Landscape Toggle (combined) ===== */
 let isRotated = false
 document.getElementById('btn-rotate').addEventListener('click', () => {
   isRotated = !isRotated
   const app = document.getElementById('app')
   if (isRotated) {
-    app.classList.add('rotated')
-    // Try native orientation lock too
+    // 1. Go fullscreen
+    const el = document.documentElement
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      ;(el.requestFullscreen || el.webkitRequestFullscreen).call(el)
+    }
+    // 2. Lock landscape orientation
     try { screen.orientation.lock('landscape').catch(() => {}) } catch(e) {}
+    // 3. Apply CSS rotate class
+    app.classList.add('rotated')
   } else {
-    app.classList.remove('rotated')
+    // Exit fullscreen
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document)
+    }
+    // Unlock orientation
     try { screen.orientation.unlock() } catch(e) {}
+    // Remove CSS rotate
+    app.classList.remove('rotated')
   }
 })
 

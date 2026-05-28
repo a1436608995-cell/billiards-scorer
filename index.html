@@ -14,8 +14,7 @@
 
   <!-- 浮动工具栏 -->
   <div class="float-toolbar">
-    <button class="ft-btn" id="btn-fullscreen" title="全屏">⛶</button>
-    <button class="ft-btn" id="btn-rotate" title="切换横竖屏">↻</button>
+    <button class="ft-btn" id="btn-rotate" title="横屏全屏">↻</button>
   </div>
 
   <!-- ===== 首页 ===== -->
@@ -25,22 +24,9 @@
       <div class="logo">🎱</div>
       <h1 class="title">台球计分器</h1>
       <p class="subtitle">选择模式开始</p>
-      <div class="cards">
-        <button class="card" data-screen="snooker">
-          <span class="card-icon">🏆</span>
-          <span class="card-title">斯诺克</span>
-          <span class="card-desc">15红球 + 6彩球 · 犯规罚分 · 单杆追踪</span>
-        </button>
-        <button class="card" data-screen="eightball">
-          <span class="card-icon">🎯</span>
-          <span class="card-title">中式八球</span>
-          <span class="card-desc">翻牌计分 · N局N胜 · 红蓝对决</span>
-        </button>
-        <button class="card" data-screen="chase">
-          <span class="card-icon">💰</span>
-          <span class="card-title">追分</span>
-          <span class="card-desc">2-4人 · 4/6/9球 · 得分自定义</span>
-        </button>
+      <div class="card-carousel" id="card-carousel">
+        <div class="carousel-track" id="carousel-track"></div>
+        <div class="carousel-indicator" id="carousel-indicator"></div>
       </div>
     </div>
   </section>
@@ -68,6 +54,7 @@
         </div>
         <div class="snk-phase" id="snk-phase">🎯 击打红球</div>
         <div class="snk-reds">红球剩余 <strong id="snk-reds">15</strong></div>
+        <div class="snk-remaining" id="snk-remaining-area">台面最高 <strong id="snk-remaining">147</strong> 分</div>
         <div class="snk-msg" id="snk-msg">请击打红球</div>
 
         <!-- 红球 -->
